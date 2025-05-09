@@ -5,9 +5,9 @@
 
 #define TIEMPO_ENTRE_REPORTE 1000
 
-const char* ssid = "Megacable-72B0"; //cambiar a la red que se usara
-const char* password = "VmN7qgZS5N"; //cambiar a la red que se usara
-const char* mqttServer = "192.168.1.74"; //cambiar a la ip del mqtt
+const char* ssid = "MQTT_Tester"; //cambiar a la red que se usara
+const char* password = ""; //cambiar a la red que se usara
+const char* mqttServer = "192.168.0.101"; //cambiar a la ip del mqtt
 const int mqttPort = 1883; //puerto que esta configurado desde el broker mqtt
 const char* mqttUser = "sato"; //usuario dado de alta en el broker mqtt
 const char* mqttPassword = "2301"; // password del broker mqtt
@@ -49,17 +49,23 @@ void reconectarWiFi() {
 
 void publicarDatosOximetro() {
   if (millis() - ultimo_reporte > TIEMPO_ENTRE_REPORTE) {
-    //Serial.print("Frecuencia Cardiaca:");
-    //Serial.print(pox.getHeartRate());
-    //Serial.print("bpm / SpO2:");
-    //Serial.print(pox.getSpO2());
-    //Serial.println("%");
     char mensaje[64];
-    snprintf(mensaje, sizeof(mensaje), "Frecuencia Cardiaca:%d bpm / SpO2:%d%%", (int)pox.getHeartRate(), (int)pox.getSpO2());
-    if (client.publish("oximetro/datos", mensaje)) {
-      Serial.println("Mensaje MQTT enviado con éxito");
+    float hr = pox.getHeartRate();
+    float spo2 = pox.getSpO2();
+    if(hr > 30 && hr < 200 && spo2 > 70 && spo2 < 100){
+      Serial.print("Frecuencia Cardiaca:");
+      Serial.print(pox.getHeartRate());
+      Serial.print("bpm / SpO2:");
+      Serial.print(pox.getSpO2());
+      Serial.println("%");
+      snprintf(mensaje, sizeof(mensaje), "Frecuencia Cardiaca:%d bpm / SpO2:%d%%", (int)pox.getHeartRate(), (int)pox.getSpO2());
+      if (client.publish("oximetro/datos", mensaje)) {
+        Serial.println("Mensaje MQTT enviado con éxito");
+      } else {
+        Serial.println("Error al enviar mensaje MQTT");
+      }
     } else {
-      Serial.println("Error al enviar mensaje MQTT");
+      Serial.println("Esperando datos validos");
     }
     ultimo_reporte = millis();
   }
@@ -83,7 +89,7 @@ void setup() {
       Serial.println("Conectado!");
     else{   
       Serial.print("fallo la conexion y el estado es: ");
-      Serial.print(client.state());
+      Serial.println(client.state());
       delay(2000);
     }
   }
@@ -93,10 +99,10 @@ void setup() {
   } else {
       Serial.println("INICIALIZADO!");
   } 
-  pox.setIRLedCurrent(MAX30100_LED_CURR_46_8MA);
+  pox.setIRLedCurrent(MAX30100_LED_CURR_11MA);
   pox.setOnBeatDetectedCallback(enPulsoDetectado);
-  Serial.println("Cuenta regresiva: ");
-  for(int i = 0; i<3;i++){
+  Serial.println("Cuenta regresiva para inicializar: ");
+  for(int i = 0; i<15;i++){
     String aux = +"... ";
     Serial.print(aux);
     delay(1000);
